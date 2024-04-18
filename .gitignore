@@ -27,3 +27,5 @@ tmp/
 
 # Project build
 main
+internal/database/migrations/20240418165823_user_table.down.sql
+internal/database/migrations/20240418165823_user_table.up.sql

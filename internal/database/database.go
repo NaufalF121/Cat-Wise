@@ -2,62 +2,58 @@ package database
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log"
 	"os"
-	"strconv"
 	"time"
 
+	_ "github.com/jackc/pgx/v5/stdlib"
 	_ "github.com/joho/godotenv/autoload"
-	"github.com/redis/go-redis/v9"
 )
 
 type Service interface {
 	Health() map[string]string
+	Query(query string, args ...interface{}) (sql.Result, error)
 }
 
 type service struct {
-	db *redis.Client
+	db *sql.DB
 }
 
 var (
-	address  = os.Getenv("DB_ADDRESS")
-	port     = os.Getenv("DB_PORT")
+	database = os.Getenv("DB_NAME")
 	password = os.Getenv("DB_PASSWORD")
-	database = os.Getenv("DB_DATABASE")
+	username = os.Getenv("DB_USERNAME")
+	host     = os.Getenv("DB_HOST")
 )
 
 func New() Service {
-	num, err := strconv.Atoi(database)
+	connStr := fmt.Sprintf("host=%s  user=%s password=%s dbname=%s sslmode=require", host, username, password, database)
+	db, err := sql.Open("pgx", connStr)
 	if err != nil {
-		log.Fatalf(fmt.Sprintf("database incorrect %v", err))
+		log.Fatal(err)
 	}
 
-	fullAddress := fmt.Sprintf("%s:%s", address, port)
-
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     fullAddress,
-		Password: password,
-		DB:       num,
-	})
-
-	s := &service{db: rdb}
-
+	s := &service{db: db}
 	return s
+}
+
+func (s *service) Query(query string, args ...interface{}) (sql.Result, error) {
+	result, err := s.db.Exec(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 func (s *service) Health() map[string]string {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 
-	result, err := s.db.Ping(ctx).Result()
-
+	err := s.db.PingContext(ctx)
 	if err != nil {
 		log.Fatalf(fmt.Sprintf("db down: %v", err))
-	}
-
-	if result != "PONG" {
-		log.Fatalf(fmt.Sprintf("Unexpected ping response: %s", result))
 	}
 
 	return map[string]string{

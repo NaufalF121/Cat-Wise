@@ -1,9 +1,10 @@
 package server
 
 import (
+	"Gateway/internal/database"
 	"github.com/gofiber/fiber/v2"
 
-	"Gateway/internal/database"
+	_ "Gateway/internal/database"
 )
 
 type FiberServer struct {

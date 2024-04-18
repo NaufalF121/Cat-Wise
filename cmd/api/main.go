@@ -1,6 +1,7 @@
 package main
 
 import (
+	"Gateway/internal/auth"
 	"Gateway/internal/server"
 	"fmt"
 	"os"
@@ -10,7 +11,7 @@ import (
 )
 
 func main() {
-
+	auth.New()
 	server := server.New()
 
 	server.RegisterFiberRoutes()
