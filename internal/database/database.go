@@ -14,7 +14,8 @@ import (
 
 type Service interface {
 	Health() map[string]string
-	Query(query string, args ...interface{}) (sql.Result, error)
+	Exec(query string, args ...interface{}) (sql.Result, error)
+	Query(query string, args ...interface{}) (*sql.Rows, error)
 }
 
 type service struct {
@@ -39,7 +40,7 @@ func New() Service {
 	return s
 }
 
-func (s *service) Query(query string, args ...interface{}) (sql.Result, error) {
+func (s *service) Exec(query string, args ...interface{}) (sql.Result, error) {
 	result, err := s.db.Exec(query, args...)
 	if err != nil {
 		return nil, err
@@ -59,4 +60,12 @@ func (s *service) Health() map[string]string {
 	return map[string]string{
 		"message": "It's healthy",
 	}
+}
+
+func (s *service) Query(query string, args ...interface{}) (*sql.Rows, error) {
+	rows, err := s.db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	return rows, nil
 }
